@@ -46,6 +46,10 @@ make qemu
 
 Finalmente, para salir de qemu: ctrl+A y X
 
+Debo asegurarme,cada vez que compile el sistema operativo, que el PATH sea el adecuado,
+por lo que en cada sesión nueva de terminal, antes de make qemu, se 
+ejecuta export PATH=/opt/riscv/bin:$PATH
+
 Problemas que tuve en la tarea: Tener que instalar dependencias que iban apareciendo como binutils y textinfo
 Al final, tuve que usar este comando para instalar todas las dependencias que podría necesitar:
 sudo apt-get install build-essential texinfo gawk bison flex libgmp-dev libmpfr-dev libmpc-dev
