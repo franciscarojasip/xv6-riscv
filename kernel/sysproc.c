@@ -22,6 +22,40 @@ sys_getpid(void)
 }
 
 uint64
+sys_getppid(void)
+{
+    struct proc *proceso = myproc();
+    return proceso->parent->pid;
+}
+
+uint64
+sys_getancestor(void)
+{
+  int grado;
+  struct proc *proceso;
+  
+  proceso=myproc();
+ 
+  argint(0, &grado);   
+  
+  if (proceso->parent == 0) {
+   return -1;
+  }
+  if (grado == 1) {
+  return proceso->parent->pid;
+}
+
+  if (grado == 2) {
+   return proceso->parent->parent->pid;
+  }
+
+  else {
+  printf("No es posible generar este ancestro");
+  return(-1);
+  }
+}
+
+uint64
 sys_fork(void)
 {
   return fork();
