@@ -24,29 +24,25 @@ sys_getpid(void)
 uint64
 sys_getppid(void)
 {
-    struct proc *proceso = myproc();
-    return proceso->parent->pid;
+    return myproc()->parent->pid;
 }
 
 uint64
 sys_getancestor(void)
 {
   int grado;
-  struct proc *proceso;
-  
-  proceso=myproc();
- 
+
   argint(0, &grado);   
   
-  if (proceso->parent == 0) {
+  if (myproc()->parent == 0) {
    return -1;
   }
   if (grado == 1) {
-  return proceso->parent->pid;
+  return myproc()->parent->pid;
 }
 
   if (grado == 2) {
-   return proceso->parent->parent->pid;
+   return myproc()->parent->parent->pid;
   }
 
   else {
