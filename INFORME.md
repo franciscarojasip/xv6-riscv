@@ -105,7 +105,7 @@ int main() {
         //getancestor
         int grado;
         for (grado = 0; grado <= 2; grado++) {
-            if (grado == 0) {<br>
+            if (grado == 0) {
                 printf("Grado %d: Soy el proceso original, mi PID es %d\n", grado, getpid());
             } else {
                 if (getancestor(grado) == -1) {
