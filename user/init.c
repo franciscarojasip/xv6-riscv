@@ -1,4 +1,4 @@
-// init: The initial user-level program
+  // init: The initial user-level program
 
 #include "kernel/types.h"
 #include "kernel/stat.h"
@@ -22,7 +22,6 @@ main(void)
   }
   dup(0);  // stdout
   dup(0);  // stderr
-
   for(;;){
     printf("init: starting sh\n");
     pid = fork();
