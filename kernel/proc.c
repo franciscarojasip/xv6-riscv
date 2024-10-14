@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include <stddef.h>
 
 struct cpu cpus[NCPU];
 
@@ -124,14 +125,15 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
-
-  // Allocate a trapframe page.
+  p->priority = 0;
+  p->boost = 1; 
+  
+// Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
     freeproc(p);
     release(&p->lock);
     return 0;
-  }
-
+   }
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
   if(p->pagetable == 0){
@@ -147,7 +149,7 @@ found:
   p->context.sp = p->kstack + PGSIZE;
 
   return p;
-}
+ }
 
 // free a proc structure and the data hanging from it,
 // including user pages.
@@ -441,51 +443,60 @@ wait(uint64 addr)
 //  - swtch to start running that process.
 //  - eventually that process transfers control
 //    via swtch back to the scheduler.
+
 void
-scheduler(void)
-{
+scheduler(void) {
   struct proc *p;
   struct cpu *c = mycpu();
-
   c->proc = 0;
+  
   for(;;){
-    // The most recent process to run may have had interrupts
-    // turned off; enable them to avoid a deadlock if all
-    // processes are waiting.
-    intr_on();
-
+// The most recent process to run may have had interrupts
+// turned off; enable them to avoid a deadlock if all
+// processes are waiting.
     int found = 0;
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        swtch(&c->context, &p->context);
+    struct proc *highest_priority = 0;
+    for(p = proc; p < &proc[NPROC]; p++) {    
+      printf("Ejecutando proceso con PID %d y prioridad %d\n", p->pid, p->priority);
+	  p->priority += p->boost;
+	  if (p->priority >=9) {
+	    p->boost = -1;
+	  } else if (p->priority <=0) {
+	     p->boost = 1;
+	  }
+      if (p->priority >highest_priority->priority) {
+         highest_priority = p;
+         highest_priority->priority = p->priority;
+         printf("Prioridad encontrada %d del proceso %d",p->priority, p->pid);
+         }
+   
+       if (highest_priority->priority) {
+	   acquire(&highest_priority->lock);
+            highest_priority->state = RUNNING;
+            c->proc = highest_priority;
+            printf("Proceso PID %d, prioridad %d, estado %d\n", p->pid, p->priority, p->state);
 
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-        found = 1;
-      }
-      release(&p->lock);
+            // Hacer el cambio de contexto
+            swtch(&c->context, &highest_priority->context);
+ 	    found = 1;
+
+            // Proceso terminado por ahora; debe haber cambiado su estado.
+            c->proc = 0;
+            release(&highest_priority->lock);
+        }
+	}
+        if(found == 0) {
+            // No hay nada que ejecutar; detener la ejecución en este núcleo
+            intr_on();
+            asm volatile("wfi");
+        }
     }
-    if(found == 0) {
-      // nothing to run; stop running on this core until an interrupt.
-      intr_on();
-      asm volatile("wfi");
-    }
-  }
 }
 
 // Switch to scheduler.  Must hold only p->lock
 // and have changed proc->state. Saves and restores
 // intena because intena is a property of this
 // kernel thread, not this CPU. It should
-// be proc->intena and proc->noff, but that would
-// break in the few places where a lock is held but
 // there's no process.
 void
 sched(void)
