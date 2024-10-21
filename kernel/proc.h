@@ -108,6 +108,3 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 };
-
-// Prototipo de la función para encontrar el proceso con la mayor prioridad
-struct proc* find_highest_priority_process(int *found);

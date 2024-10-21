@@ -445,75 +445,51 @@ wait(uint64 addr)
 //    via swtch back to the scheduler.
 
 void scheduler(void) {
-  struct proc *p;
-  struct cpu *c = mycpu();
-  c->proc = 0;
+    struct proc *p;
+    struct cpu *c = mycpu();
+    c->proc = 0;
+     struct proc *highest_priority = 0;
 
-  for (;;) {
-    // Habilitar interrupciones para evitar deadlocks
-    intr_on();
+    for (;;) {
+        intr_on();
 
-    struct proc *highest_priority = 0;
-    int found = 0;
+        for (p = proc; p < &proc[NPROC]; p++) {
+            if (p->state == 3 && p->executed == 0) { // RUNNABLE y no ejecutado
+                // Buscar el proceso con mayor prioridad
+                if (highest_priority == 0 || p->priority > highest_priority->priority) {
+                    highest_priority = p;
+                    acquire(&p->lock);
+		   c->proc = p; printf("Ejecutando proceso %d con prioridad %d\n", p->pid, p->priority);
+           	    swtch(&c->context, &p->context);
+                    p->executed = 1;
+            // Marcar el proceso p (que es highest_priority en este punto) como ejecutado
+                   release(&p->lock);
+		}
+		else {
+            // Si no hay procesos ejecutables, poner la CPU en espera
+            intr_on();
+            asm volatile("wfi");
+        	}
+            }
 
-    // Recorrer todos los procesos para encontrar el de mayor prioridad
-    for (p = proc; p < &proc[NPROC]; p++) {
-      if (p->state == RUNNABLE) {
-        found = 1;
-	p->executed = 1;
-        // Buscar el proceso con mayor prioridad
-        if (highest_priority == 0 || p->priority > highest_priority->priority) {
-          highest_priority = p;
         }
-      }
-    }
 
+        // Después de cada iteración, ajustar las prioridades de los procesos RUNNABLE
+        for (p = proc; p < &proc[NPROC]; p++) {
+            if (p->state == RUNNABLE && p->executed == 0) { // Solo ajustar si no ha sido ejecutado
+                // Ajustar la prioridad de los procesos que no fueron seleccionados
+                p->priority += p->boost;
 
-    // Ejecutar el proceso con la mayor prioridad
-    if (found && highest_priority) {
-      acquire(&highest_priority->lock); // Solo un acquire
-
-      highest_priority->state = RUNNING; // Cambiar a ejecutando
-      c->proc = highest_priority;
-
-      printf("Ejecutando proceso con PID %d y prioridad %d\n", highest_priority->pid, highest_priority->priority);
-
-      // Hacer el cambio de contexto
-      swtch(&c->context, &highest_priority->context);
-
-      // El proceso ha terminado su turno, dejarlo en RUNNABLE si aún no ha terminado
-      if (highest_priority->state == RUNNING) {
-        highest_priority->state = RUNNABLE;
-      }
-
-      c->proc = 0; // Proceso terminado, liberar CPU
-      release(&highest_priority->lock);
-    }
-
-    // Si no hay procesos ejecutables, poner la CPU en espera
-    if (!found) {
-      intr_on();
-      asm volatile("wfi");
-    }
-
-    // Después de cada iteración, ajustar las prioridades de los procesos RUNNABLE
-    for (p = proc; p < &proc[NPROC]; p++) {
-      if (p != highest_priority && p->state == RUNNABLE) {
-        // Ajustar la prioridad de los procesos que no fueron seleccionados
-        p->priority += p->boost;
-
-        // Invertir el boost si la prioridad llega a los límites (0 o 9)
-        if (p->priority >= 9) {
-          p->boost = -1;
-        } else if (p->priority <= 0) {
-          p->boost = 1;
+                // Invertir el boost si la prioridad llega a los límites (0 o 9)
+                if (p->priority >= 9) {
+                    p->boost = -1;
+                } else if (p->priority <= 0) {
+                    p->boost = 1;
+                }
+            }
         }
-      }
     }
-  }
 }
-
-
 // Switch to scheduler.  Must hold only p->lock
 // and have changed proc->state. Saves and restores
 // intena because intena is a property of this

@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
     // Crear procesos aquí usando fork(), por ejemplo:
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 10; i++) {
         if (fork() == 0) {
             // Código del proceso hijo
             //printf("Soy el proceso hijo con PID %d\n", getpid());
@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Esperar a que todos los hijos terminen
-    for (int i = 0; i < 20; i++) {
+    for (int j = 0; j < 10; j++) {
         wait(0);
     }
 
