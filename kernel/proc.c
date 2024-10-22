@@ -456,20 +456,32 @@ void scheduler(void) {
         for (p = proc; p < &proc[NPROC]; p++) {
             if (p->state == 3 && p->executed == 0) { // RUNNABLE y no ejecutado
                 // Buscar el proceso con mayor prioridad
+                if void scheduler(void) {
+    struct proc *p;
+    struct cpu *c = mycpu();
+    c->proc = 0;
+     struct proc *highest_priority = 0;
+
+    for (;;) {
+        intr_on();
+
+        for (p = proc; p < &proc[NPROC]; p++) {
+            if (p->state == 3 && p->executed == 0) { // RUNNABLE y no ejecutado
+                // Buscar el proceso con mayor prioridad
                 if (highest_priority == 0 || p->priority > highest_priority->priority) {
                     highest_priority = p;
                     acquire(&p->lock);
-		   c->proc = p; printf("Ejecutando proceso %d con prioridad %d\n", p->pid, p->priority);
-           	    swtch(&c->context, &p->context);
+                   c->proc = p; printf("Ejecutando proceso %d con prioridad %d\n", p->pid, p->priority);
+                    swtch(&c->context, &p->context);
                     p->executed = 1;
             // Marcar el proceso p (que es highest_priority en este punto) como ejecutado
                    release(&p->lock);
-		}
-		else {
+                }
+                else {
             // Si no hay procesos ejecutables, poner la CPU en espera
             intr_on();
             asm volatile("wfi");
-        	}
+                }
             }
 
         }
