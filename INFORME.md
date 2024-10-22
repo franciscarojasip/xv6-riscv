@@ -32,16 +32,17 @@ Después, se debió modificar el archivo `proc.c`. Tanto en la funcion ***allocp
         }
   
 Como en la parte del ***scheduler()***. Aqui, se recorren todos los procesos en cola, y se buscan aquellos que estén en estado RUNNABLE y su variables _executed_ sea igual a 0. Si se encuentra una mayor prioridad en el proceso p, este se ejecuta y se marca como tal. Después, todos los procesos restantes que no hayan sido ejecutados son aumentados en su boost.
-    void scheduler(void) {
-    struct proc *p;
-    struct cpu *c = mycpu();
-    c->proc = 0;
-     struct proc *highest_priority = 0;
 
-    for (;;) {
-        intr_on();
+        void scheduler(void) {
+        struct proc *p;
+        struct cpu *c = mycpu();
+        c->proc = 0;
+        struct proc *highest_priority = 0;
 
-        for (p = proc; p < &proc[NPROC]; p++) {
+        for (;;) {
+         intr_on();
+
+         for (p = proc; p < &proc[NPROC]; p++) {
             if (p->state == 3 && p->executed == 0) { // RUNNABLE y no ejecutado
                 // Buscar el proceso con mayor prioridad
                 if (highest_priority == 0 || p->priority > highest_priority->priority) {
@@ -79,7 +80,28 @@ Como en la parte del ***scheduler()***. Aqui, se recorren todos los procesos en 
     }
 
 También, se creó un archivo llamado ***prueba_t2.c***, donde se ve este programador de prioridades en acción:
-        PONER CODIGO ACA
+        #include "kernel/types.h"
+        #include "kernel/stat.h"
+        #include "user/user.h"
+        
+        int main(int argc, char *argv[]) {
+            // Crear procesos aquí usando fork(), por ejemplo:
+            for (int i = 0; i < 10; i++) {
+                if (fork() == 0) {
+                    // Código del proceso hijo
+                    //printf("Soy el proceso hijo con PID %d\n", getpid());
+                    sleep(5); // Simular trabajo
+                    exit(0);
+                }
+            }
+        
+            // Esperar a que todos los hijos terminen
+            for (int j = 0; j < 10; j++) {
+                wait(0);
+            }
+        
+            exit(0);
+        }
 
 ### Dificultades y cómo se resolvieron
 
@@ -106,6 +128,7 @@ La primera dificultad se encontró cuando, al comenzar la ejecución del sistema
         s  
 
 Aqui se puede ver que se ejecuta el mismo código más de una vez, imprimiendo varios errores simultáneos. Esto ocurría debido a que el SO estaba ejecutándose con 3 CPUs. Por esto, se debío minimizar la cantidad de CPUs en el Makefile, a 1.
+
 
 
 
