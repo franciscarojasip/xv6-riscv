@@ -5,6 +5,7 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
+#include "proc.h"
 
 /*
  * the kernel's page table.
@@ -448,4 +449,48 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+// Marca una región de memoria como solo lectura
+int mprotect(void *addr, int len) {
+    uint64 a, end;
+    pte_t *pte;
+    a = (uint64) addr;
+    // Calcular el final de la región de memoria
+    end = (uint64)(addr + len);
+
+    // Recorrer las páginas afectadas
+    for (; a < end; a += PGSIZE) {        
+// Obtener el PTE correspondiente a la dirección
+        pte = walk(myproc()->pagetable, a, 0);
+        if (pte == 0)
+            return -1; // Error si la página no existe
+
+        // Modificar el PTE para hacer la página solo lectura (deshabilitar escritura)
+        *pte = *pte & ~PTE_W;
+    }
+
+    return 0; // Éxito
+}
+
+// Rehabilita el permiso de escritura de una región de memoria
+int munprotect(void *addr, int len) {
+    uint64 a, end;
+    pte_t *pte;
+    a = (uint64) addr;
+    // Calcular el final de la región de memoria
+    end = (uint64)(addr + len);
+
+    // Recorrer las páginas afectadas
+    for (; a < end; a += PGSIZE) {        
+// Obtener el PTE correspondiente a la dirección
+        pte = walk(myproc()->pagetable, a, 0);
+        if (pte == 0)
+            return -1; // Error si la página no existe
+
+        // Restaurar el PTE para habilitar la escritura
+        *pte = *pte | PTE_W;
+    }
+
+    return 0; // Éxito
 }

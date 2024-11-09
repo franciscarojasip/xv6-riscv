@@ -91,3 +91,35 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int sys_mprotect(void) {
+    uint64 addr;
+    int len;
+
+    // Llamamos a `argaddr` y `argint` de manera independiente
+    argaddr(0, &addr);
+    argint(1, &len);
+
+    // Si la validación falla, retorna -1
+    if (addr == 0 || len <= 0)
+        return -1;
+
+    // Llamada a `mprotect` con los valores obtenidos
+    return mprotect((void*)addr, len);
+}
+
+int sys_munprotect(void) {
+    uint64 addr;
+    int len;
+
+    // Llamamos a `argaddr` y `argint` de manera independiente
+    argaddr(0, &addr);
+    argint(1, &len);
+
+    // Si la validación falla, retorna -1
+    if (addr == 0 || len <= 0)
+        return -1;
+
+    // Llamada a `munprotect` con los valores obtenidos
+    return munprotect((void*)addr, len);
+}
