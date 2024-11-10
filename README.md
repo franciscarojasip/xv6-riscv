@@ -2,6 +2,11 @@
 
 ### Funcionamiento de la protección de memoria
 
+***mprotect()*** \
+Se reciben los argumentos de la localización de memoria ```addr``` y longitud ```len``` que se quiere proteger. Se calcula el límite de esta protección, denominado ```end```. Luego, se recorre cada página dentro de esta región de memoria. En cada una de ellas, se utiliza la función ```walk``` para obtener el puntero de la entrada de la tabla de páginas (donde se encuentran los permisos de escritura de cada página). Si la entrada no existe, se devuelve -1. Finalmente, se cambian los permisos de esta página con ```*pte = *pte & ~PTE_W;```, haciendo así que la página sea de solo lectura.
+
+***munprotect()*** \
+El funcionamiento es similar al de ```mprotect()```, solo que, en vez de instaurar un permiso de solo lectura para cada página, este permiso se revoca y devuelve a una página desprotegida, donde se puede escribir.
 
 ### Modificaciones realizadas
 
@@ -45,7 +50,7 @@ La modificación principal se encuentra en el archivo ***vm.c***, donde se defin
             return 0; // Éxito
         }
 
-En el archivo sysproc.c, se usan mprotect() y munprotect() como llamadas de sistema, y se manejan los posibles errores (dirección o largo inválidos):
+En el archivo ***sysproc.c***, se usan *mprotect()* y *munprotect()* como llamadas de sistema, y se manejan los posibles errores (dirección o largo inválidos):
 
         int sys_mprotect(void) {
             uint64 addr;
@@ -99,7 +104,7 @@ Al ser llamadas de sistema, ambas funciones se definen en los archivos ***syscal
         entry("mprotect");
         entry("munprotect");
 
-Además, se creó una función de prueba para probar estas llamadas, en donde se protege una alocación de memoria, y se puede elegir entre desbloquear el modo lectura, o probar que el espacio está protegido:
+Además, se creó una función de prueba llamada ***prueba_t3.c*** en la carpeta ```/user```, para probar estas llamadas, en donde se protege una alocación de memoria, y se puede elegir entre desbloquear el modo lectura, o probar que el espacio está protegido:
         #include "kernel/types.h"
         #include "kernel/stat.h"
         #include "user/user.h"
@@ -146,8 +151,8 @@ Además, se creó una función de prueba para probar estas llamadas, en donde se
             exit(0);
         }
 
-Finalmente, se modificó la función *usertrap()* para tener más información acerca del error, para asi asegurarse que es por un intento de escritura en un archivo protegido, y no por otra cosa.
+Finalmente, se modificó la función *usertrap()*, en el archivo ***trap.c***, para tener más información acerca del error, como el PID al que le corresponde este error, para asi asegurarse que es por un intento de escritura en un archivo protegido, y no por otra cosa.
 
 ### Problemas encontrados y cómo se solucionaron
 
-El problema principal se tuvo haciendo la función de prueba, ya que antes no se tenía la opción de desbloquear, sino que se intentaba escribir en la memoria aun cuando está estaba protegida, y después se utilizaba la función para desbloquear. Esto provocó que existiera un error al intentar escribir en la reserva, pero el código no se seguía ejecutando. Es por esto que se añadió la opción de desbloquear o de intentar escribir, para asi probar que ambas funcionen funcionan (valga la redundancia) correctamente 
+El problema principal se tuvo haciendo la función de prueba, ya que antes no se tenía la opción de desbloquear, sino que se intentaba escribir en la memoria aun cuando está estaba protegida, y después se utilizaba la función para desbloquear. Esto provocó que existiera un error al intentar escribir en la reserva, pero el código no se seguía ejecutando. Es por esto que se añadió la opción de desbloquear o de intentar escribir, para asi probar que ambas funcionen se ejecutan correctamente.
