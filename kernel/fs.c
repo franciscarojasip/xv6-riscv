@@ -201,6 +201,7 @@ ialloc(uint dev, short type)
   int inum;
   struct buf *bp;
   struct dinode *dip;
+  struct inode *ip;
 
   for(inum = 1; inum < sb.ninodes; inum++){
     bp = bread(dev, IBLOCK(inum, sb));
@@ -208,6 +209,8 @@ ialloc(uint dev, short type)
     if(dip->type == 0){  // a free inode
       memset(dip, 0, sizeof(*dip));
       dip->type = type;
+      ip = iget(dev,inum);
+      ip->permissions = 3; //agregue la iniciacion de permisos a 3
       log_write(bp);   // mark it allocated on the disk
       brelse(bp);
       return iget(dev, inum);

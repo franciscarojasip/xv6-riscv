@@ -5,6 +5,9 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "file.h"
+#include "fs.h"
+#include "sleeplock.h"
 
 uint64
 sys_exit(void)
@@ -90,4 +93,55 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint 
+sys_chmod(void) 
+{
+    char archivo[MAXPATH]; // Buffer para el nombre del archivo
+    int permissions;
+    struct inode *ip;
+
+    if (argstr(0, archivo, MAXPATH) < 0) {
+        return -1; // Error al obtener el nombre del archivo
+    }
+
+    argint(1, &permissions);
+
+    if (archivo[0] == '\0' || permissions < 0) {
+        return -1; // Validación adicional para evitar errores
+    }
+
+    // Comenzar operación en el sistema de archivos
+    begin_op();
+
+    // Buscar el inode del archivo por nombre
+    if ((ip = namei(archivo)) == 0) { // Busca el archivo por nombre
+        end_op();
+        return -1; // Archivo no encontrado
+    }
+
+    // Bloquear el inode
+    ilock(ip);
+
+    // Verificar si el archivo es inmutable (por ejemplo, si tiene un permi>    if (ip->permissions == 5) {
+     if (ip->permissions == 5) {
+	iunlockput(ip);
+        end_op();
+        return -1; // No se puede cambiar permisos de un archivo inmutable
+    }
+
+    // Cambiar los permisos
+    ip->permissions = permissions;
+
+    // Actualizar el inode en el disco
+    iupdate(ip);
+
+    // Desbloquear y liberar el inode
+    iunlockput(ip);
+
+    // Finalizar operación en el sistema de archivos
+    end_op();
+
+    return 0; // Éxito
 }
