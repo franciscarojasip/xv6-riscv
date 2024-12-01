@@ -1,3 +1,6 @@
+#include "memlayout.h"
+#include "message.h"
+
 struct buf;
 struct context;
 struct file;
@@ -8,6 +11,12 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+
+// ipc.c (nuevo archivo para manejar IPC)
+void		init_message_queue(void);
+uint64 		sys_send(void);
+uint64 		sys_receive(void);
+
 
 // bio.c
 void            binit(void);
