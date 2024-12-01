@@ -2,7 +2,7 @@
 
 
 ### Funcinamiento y lógica
-Se modifican las características de los inodos, los cuales contienen los metadatos de un archivo. Se agrega una nueva característica, llamada _permissions_, en donde se logra definir si el archivo puede leerse y escribirse (3), solo leerse (1) ó solo lectura, sin poder cambiar este estado (5).  
+Se modifican las características de los inodos, los cuales contienen los metadatos de un archivo. Se agrega una nueva característica, llamada _permissions_, en donde se logra definir si el archivo puede leerse y escribirse (3), solo leerse (1), solo escribirse (2), ó solo lectura, sin poder cambiar este estado (5).  
 Después, se utiliza esta característica en la llamada al sistema `chmod`, donde se modifican estos permisos, según el nombre de archivo y permiso que se da.  
 Finalmente, esta llamada se implementa en un archivo de prueba, para asegurarse que los permisos funcionan correctamente.
 
@@ -21,7 +21,7 @@ En el archivo `file.h`, donde se encuentra decalarada la estructura de los inodo
 En el archivo `fs.c`, donde se encuentran funciones relacionadas a los inodos, se modificó la función `ialloc(uint dev, short type)`, para que, al identificar un inodo, este incluyera los permisos por defecto
 ` ip->permissions = 3;`.  
 
-En el archivo `sysfile.c`, se modifica la función `uint64 sys_open(void)`, para que no se puedan abrir los archivos que son de modo lectura en modo escritura, o abrir directamente directorios en modo escritura (ya que no es válido). Si alguna de estas verificaciones no es la correcta, retorna -1.  
+En el archivo `sysfile.c`, se modifica la función `uint64 sys_open(void)`, para que no se puedan abrir los archivos que son de modo lectura en modo escritura, asegurarse que cuando se quiera escribir, que se tengan los permisos necesarios, o abrir directamente directorios en modo escritura (ya que no es válido). Si alguna de estas verificaciones no es la correcta, retorna -1.  
 
 En el archivo `sysproc.c`, se definió la nueva llamada al sistema `uint sys_chmod(void)`, donde se busca el inodo correspondiente al archivo, y se 
 cambia su característica `permissions` según el número que se haya dado (a menos que el permiso sea inmutable, en este caso
