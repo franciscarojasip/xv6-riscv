@@ -53,10 +53,15 @@ argraw(int n)
 }
 
 // Fetch the nth 32-bit system call argument.
-void
+int
 argint(int n, int *ip)
 {
-  *ip = argraw(n);
+    // Verifica si el argumento es válido
+    if (n >= myproc()->trapframe->a7)  // 'a7' tiene el número de syscall
+        return -1;
+
+    *ip = argraw(n);  // Obtén el argumento sin procesar
+    return 0;         // Indica éxito
 }
 
 // Retrieve an argument as a pointer.
@@ -128,7 +133,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_send] sys_send,
+[SYS_send]    sys_send,
 [SYS_receive] sys_receive,
 };
 
