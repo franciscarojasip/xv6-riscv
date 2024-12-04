@@ -26,8 +26,15 @@ Primeramente, se creó la estructura `message` y la cola `message_queue` en un n
             int count;                        
         } message_queue;
 
-También, se crearon las llamadas a sistemas `uint64 sys_send(void)` y `uint64 sys_receive(void)`, las cuales
+También, se crearon las llamadas a sistemas `uint64 sys_send(void)` y `uint64 sys_receive(void)`, las cuales se encargan de el envío y recibimiento de mensajes de un proceso a otro, usando un **spinlock** para evitar la modificación de la cola.
 
+        void init_message_queue(void) {
+            initlock(&msg_queue.lock, "msg_queue");
+            msg_queue.head = 0;
+            msg_queue.tail = 0;
+            msg_queue.count = 0;
+        }
+        
         uint64 sys_send(void) {
             int pid;
             char msg[MSG_SIZE]; // Buffer para el mensaje
@@ -59,14 +66,16 @@ También, se crearon las llamadas a sistemas `uint64 sys_send(void)` y `uint64 s
         
         uint64 sys_receive(void) {
             char *buffer; // Puntero al buffer del usuario
-                if (argaddr(0, (uint64 *)&buffer) < 0) {
+        
+            if (argaddr(0, (uint64 *)&buffer) < 0) {
                 return -1; // Error en argumentos
             }
         
             acquire(&msg_queue.lock);
         
             while (msg_queue.count == 0) {
-                sleep(&msg_queue, &msg_queue.lock); // Bloquearse si no hay mensajes    }
+                sleep(&msg_queue, &msg_queue.lock); // Bloquearse si no hay mensajes
+            }
         
             message received_msg = msg_queue.messages[msg_queue.head];
             msg_queue.head = (msg_queue.head + 1) % MAX_MESSAGES;
@@ -74,18 +83,23 @@ También, se crearon las llamadas a sistemas `uint64 sys_send(void)` y `uint64 s
         
             release(&msg_queue.lock);
         
-            if (copyout(myproc()->pagetable, (uint64)buffer, received_msg.content, >        return -1; // Error en copyout
+            if (copyout(myproc()->pagetable, (uint64)buffer, received_msg.content, sizeof(received_msg.content)) < 0) {
+                return -1; // Error en copyout
             }
         
             return received_msg.sender_pid; // Retornar el PID del remitente
         }
 
-Estas se definieron, junto con la inicialización de la cola de mensajes, en un archivo llamado `ipc.c`. Además, se actualizaron los archivos ... para que funcionaran
+Estas se definieron, junto con la inicialización de la cola de mensajes, en un archivo llamado `ipc.c`. Además, se actualizaron los archivos _syscall.h, syscall.c, defs.h, usys.pl y user.h_ para que funcionaran
 correctamente como llamadas a sistema.  
 
 Finalmente, se creó una prueba llamada `prueba_t5.c`, donde se aplican las funciones y estructura de la cola
-de mensajes: se envía un mensaje, y si la cola está llena, recibe un error. Luego el kernel almacena el mensaje en la cola y despierta lectores bloqueados.
+de mensajes con un `fork()`: el lector envía un mensaje, y si la cola está llena, recibe un error. Luego el kernel almacena el mensaje en la cola y despierta lectores bloqueados.
 Si hay mensajes, se reciben en orden. Y si no hay mensajes, se bloquea hasta que el escritor de mensajes envíe uno.
+ Los mensajes se definen como _"Mensaje n-ésimo"_ para asegurar que se envian en el orden correcto, y el programa falla si se tratan de enviar más mensajes de los definidos en `MAX_MESSAGES`.
 
 ### Dificultades encontradas
 
+Una de las mayores dificultades fue encontrar el lugar donde se crearían la estructura de mensajes y su cola. Para evitar perturbar la estructura de xv6, se crearon estos nuevos archivos **message.h** e **ipc.c**.  
+Además, surgieron problemas con la definición y uso de funciones auxiliares como _argaddr_ y _argstr_, ya que su implementación no coincidía con las declaraciones en algunos casos, lo que generaba errores de tipo, por lo que se debió cambiar su estructura (de void a int que retornara 0).  
+Por último, se debieron agregar **guards** (#ifndef, #define, y #endif) en archivos de tipo cabecera, porque, con la agregación de estos nuevos archivos, algunas declaraciones como `#include "defs.h"` se repetían en la compilación. Esto ayudó a evitar errores de este tipo de manera simple.
