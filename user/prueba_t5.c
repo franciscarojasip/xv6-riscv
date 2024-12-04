@@ -3,9 +3,9 @@
 #include "user/user.h"
 
 // Funciones auxiliares
-void safestrcpy(char *s, const char *t, int n);
-void safestrcat(char *dest, const char *src, int size);
-void itoa(int value, char *str, int base);
+static void safestrcpy(char *s, const char *t, int n);
+static void safestrcat(char *dest, const char *src, int size);
+static void itoa(int value, char *str, int base);
 
 int main() {
     int pid = fork();
@@ -28,26 +28,35 @@ int main() {
             }
         }
     } else {
-        // Proceso escritor
-        for (int i = 0; i < 5; i++) {
-            char msg[128];
-            safestrcpy(msg, "Mensaje ", sizeof(msg)); // Copia "Mensaje "
-            char num[10];
-            itoa(i, num, 10); // Convierte el número a string
-            safestrcat(msg, num, sizeof(msg)); // Concatena el número
+    // Proceso escritor
+    for (int i = 0; i < 5; i++) {
+        char msg[128];
+        safestrcpy(msg, "Mensaje ", sizeof(msg)); // Copia "Mensaje "
+        char num[10];
+        itoa(i, num, 10); // Convierte el número a string
+        safestrcat(msg, num, sizeof(msg)); // Concatena el número
 
-            if (send(pid, msg) < 0) { // Llama a sys_send
-                printf("Error al enviar el mensaje\n");
-            }
-            sleep(10); // Esperar un poco entre mensajes
+        // Intentar enviar el mensaje
+        printf("Escritor: Enviando mensaje %d\n", i);
+        if (send(pid, msg) < 0) { // Llama a sys_send
+            printf("Error al enviar el mensaje\n");
         }
-        wait(0); // Esperar al proceso lector
+
+        // Introducir una pausa prolongada después del segundo mensaje
+        if (i == 2) {
+            sleep(50); // Pausa prolongada
+        } else {
+            sleep(10); // Pausa normal
+        }
     }
-    exit(0);
+
+    wait(0); // Esperar al proceso lector
+}
+exit(0);
 }
 
 // Implementaciones de funciones auxiliares
-void safestrcpy(char *s, const char *t, int n) {
+static void safestrcpy(char *s, const char *t, int n) {
     if (n <= 0)
         return;
     while (--n > 0 && (*s++ = *t++) != 0)
@@ -55,7 +64,7 @@ void safestrcpy(char *s, const char *t, int n) {
     *s = 0;
 }
 
-void safestrcat(char *dest, const char *src, int size) {
+static void safestrcat(char *dest, const char *src, int size) {
     char *d = dest;
     int len = 0;
 
@@ -72,7 +81,7 @@ void safestrcat(char *dest, const char *src, int size) {
     *d = '\0';
 }
 
-void itoa(int value, char *str, int base) {
+static void itoa(int value, char *str, int base) {
     char *ptr = str;
     char *ptr1 = str;
     char tmp_char;

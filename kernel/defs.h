@@ -22,8 +22,8 @@ struct superblock;
 
 // ipc.c (nuevo archivo para manejar IPC)
 void		init_message_queue(void);
-uint64 		sys_send(void);
-uint64 		sys_receive(void);
+uint64 		send(void);
+uint64 		receive(void);
 
 
 // bio.c
@@ -153,7 +153,7 @@ char*           strncpy(char*, const char*, int);
 // syscall.c
 int            argint(int, int*);
 int             argstr(int, char*, int);
-void            argaddr(int, uint64 *);
+int             argaddr(int, uint64 *);
 int             fetchstr(uint64, char*, int);
 int             fetchaddr(uint64, uint64*);
 void            syscall();
